@@ -34,13 +34,10 @@ button:hover { background: rgba(255,255,255,.3); }
 button.primary { background: #fff; color: var(--accent); font-weight: 600; }
 button.ghost { background: transparent; border: 1px solid rgba(255,255,255,.4); }
 
-/* 대시보드 */
 .dashboard { background: rgba(0,0,0,.15); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; font-size: 13px; }
 .progress-bar-bg { flex: 1; height: 8px; background: rgba(255,255,255,.3); border-radius: 4px; overflow: hidden; }
 .progress-bar-fill { height: 100%; background: #fff; width: 0%; transition: width .3s; border-radius: 4px; }
-.status-badges { display: flex; gap: 8px; font-size: 12px; font-weight: 600; }
 
-/* 탭 네비게이션 */
 nav.tabs {
   display: flex; gap: 4px; padding: 12px 16px 0; overflow-x: auto;
   background: var(--bg); position: sticky; top: 0; z-index: 10;
@@ -89,7 +86,6 @@ textarea { resize: vertical; min-height: 60px; }
 .status-실행중 { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
 .status-검증완료 { background: #dcfce7; color: #15803d; border-color: #86efac; }
 
-.settings-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
 .warn-box { background: #fff7ed; border-left: 4px solid var(--warn); padding: 12px; border-radius: 8px; font-size: 13px; color: #9a3412; margin-bottom: 16px; }
 .info-box { background: #eff6ff; border-left: 4px solid var(--blue); padding: 12px; border-radius: 8px; font-size: 13px; color: #1e40af; margin-bottom: 16px; }
 
@@ -106,7 +102,7 @@ textarea { resize: vertical; min-height: 60px; }
       <div class="sub">GitHub Sync · 무제한 추가 · 진행률 대시보드</div>
     </div>
     <div class="actions">
-      <button class="primary" onclick="App.saveToGitHub()">☁️ GitHub 저장</button>
+      <button class="primary" id="btnSaveGh" onclick="App.saveToGitHub()">☁️ GitHub 저장</button>
       <button onclick="App.loadFromGitHub()">📥 GitHub 불러오기</button>
       <button class="ghost" onclick="App.exportMarkdown()">📄 MD 내보내기</button>
       <button class="ghost" onclick="App.exportJSON()">💾 로컬 백업</button>
@@ -129,7 +125,6 @@ textarea { resize: vertical; min-height: 60px; }
 </nav>
 
 <main>
-  <!-- 대시보드 탭 -->
   <section id="tab-dashboard" class="panel active">
     <div class="info-box">
       💡 <b>환영합니다!</b> 실습을 추가하려면 상단의 <b>+ 새 실습 추가</b>를 누르세요. 데이터는 자동으로 로컬 브라우저에 저장되며, <b>☁️ GitHub 저장</b>을 누르면 깃허브 저장소에도 안전하게 보관됩니다.
@@ -143,7 +138,6 @@ textarea { resize: vertical; min-height: 60px; }
     <div id="dashboard-labs" style="display:flex; flex-direction:column; gap:12px;"></div>
   </section>
 
-  <!-- 설정 탭 -->
   <section id="tab-settings" class="panel">
     <div class="warn-box">
       ⚠️ <b>보안 주의:</b> Personal Access Token(PAT)은 비밀번호와 같습니다. 절대 타인과 공유하지 마세요. 이 토큰은 현재 기기의 브라우저에만 저장됩니다.
@@ -162,20 +156,17 @@ textarea { resize: vertical; min-height: 60px; }
     </div>
   </section>
 
-  <!-- 동적 실습 탭들이 들어갈 곳 -->
   <div id="labs-container"></div>
 </main>
 
 <div class="saved-badge" id="savedBadge">✅ 저장됨</div>
 
 <script>
-// 기본 데이터 구조
 const DEFAULT_STATE = {
   settings: { owner: "", repo: "", path: "data.json", token: "" },
   labs: []
 };
 
-// 초기 실습 데이터 (기존 데이터 마이그레이션용)
 const INITIAL_LABS = [
   {
     id: "lab_1", title: "실습 #1: STM32 기반 고추건조기 온습도 제어", status: "실행중", date: "", field: "임베디드 · 제어", duration: "4~6시간", tools: "STM32F103, SHT30, 릴레이, 히터, 팬, STM32CubeIDE",
@@ -206,13 +197,7 @@ const App = {
   init() {
     this.loadLocal();
     if(this.state.labs.length === 0) {
-      // 기존 v1 데이터가 있는지 확인 후 마이그레이션
-      const oldRaw = localStorage.getItem('lab-notebook-v1');
-      if(oldRaw) {
-        this.state.labs = INITIAL_LABS; // 기존 데이터 구조가 달라 일단 기본값으로 대체 (필요시 파싱 로직 추가)
-      } else {
-        this.state.labs = INITIAL_LABS;
-      }
+      this.state.labs = INITIAL_LABS;
       this.saveLocal();
     }
     this.bindSettings();
@@ -424,7 +409,7 @@ const App = {
       if(field === 'title') this.renderTabs();
       if(field === 'status') {
         this.renderDashboard();
-        this.renderLabs(); // 클래스 업데이트를 위해 다시 렌더링
+        this.renderLabs();
       }
     }
   },
@@ -450,12 +435,11 @@ const App = {
       return;
     }
     
-    const btn = document.querySelector('button.primary');
+    const btn = document.getElementById('btnSaveGh');
     const oldText = btn.textContent;
     btn.textContent = "저장 중..."; btn.disabled = true;
 
     try {
-      // 1. 기존 파일의 SHA 확인 (업데이트용)
       let sha = null;
       const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -465,8 +449,11 @@ const App = {
         sha = getData.sha;
       }
 
-      // 2. 파일 저장 (PUT)
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(this.state, null, 2))));
+      // 💡 [핵심 수정] 토큰을 제외한 데이터 복사본 생성
+      const dataToSave = JSON.parse(JSON.stringify(this.state));
+      dataToSave.settings.token = ""; // 토큰은 깃허브에 올리지 않음!
+
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(dataToSave, null, 2))));
       const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
         method: 'PUT',
         headers: {
@@ -484,7 +471,7 @@ const App = {
         alert("✅ 성공적으로 GitHub에 저장되었습니다!");
       } else {
         const err = await putRes.json();
-        alert("❌ 저장 실패: " + (err.message || "토큰 권한(repo) 또는 경로를 확인하세요."));
+        alert("❌ 저장 실패: " + (err.message || "권한 또는 경로 확인"));
       }
     } catch(e) {
       alert("❌ 네트워크 오류: " + e.message);
@@ -514,7 +501,7 @@ const App = {
       const remoteState = JSON.parse(decoded);
       
       if(remoteState.labs && remoteState.settings) {
-        // 기기별 설정(Token)은 유지하면서 데이터만 덮어쓰기
+        // 💡 [핵심 수정] 원격 데이터에는 토큰이 없으므로, 기존 로컬 토큰을 유지
         const localToken = this.state.settings.token;
         this.state = remoteState;
         this.state.settings.token = localToken;
@@ -531,7 +518,7 @@ const App = {
     }
   },
 
-  // ==== 내보내기 (Markdown / JSON) ====
+  // ==== 내보내기 ====
   exportMarkdown() {
     let md = `# 실습 기록장\n\n_내보낸 날짜: ${new Date().toLocaleString('ko-KR')}_\n\n`;
     this.state.labs.forEach(lab => {
@@ -553,7 +540,10 @@ const App = {
   },
 
   exportJSON() {
-    const blob = new Blob([JSON.stringify(this.state, null, 2)], {type:'application/json'});
+    // 로컬 백업 시에는 토큰을 빼고 저장하는 것이 보안상 안전합니다.
+    const dataToSave = JSON.parse(JSON.stringify(this.state));
+    dataToSave.settings.token = "";
+    const blob = new Blob([JSON.stringify(dataToSave, null, 2)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `lab-notebook-backup-${new Date().toISOString().slice(0,10)}.json`;
@@ -568,7 +558,10 @@ const App = {
       try {
         const data = JSON.parse(ev.target.result);
         if(data.labs) {
+          const localToken = this.state.settings.token;
           this.state = data;
+          this.state.settings.token = localToken;
+          
           this.saveLocal();
           this.bindSettings();
           this.render();
