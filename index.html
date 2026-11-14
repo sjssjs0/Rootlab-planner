@@ -424,6 +424,94 @@ footer{
   </div>
 </section>
 
+
+<!-- ==================== 실습 #3 ==================== -->
+<section id="lab3" class="panel">
+  <input type="text" class="lab-title" data-save="lab3:title"
+         placeholder="실습 #3 제목" value="실습 #3: RTL-SDR 기반 무선 신호 캡처 및 분석">
+
+  <div class="card">
+    <h3><span class="num">0</span>기본 정보</h3>
+    <div class="grid-2">
+      <label>날짜<input type="date" data-save="lab3:date"></label>
+      <label>분야<input type="text" data-save="lab3:field" value="전자전 · 통신 보안"></label>
+      <label>예상 소요<input type="text" data-save="lab3:duration" value="3~4시간"></label>
+      <label>환경 / 도구<input type="text" data-save="lab3:tools" value="RTL-SDR 동글, 안테나, URH(Universal Radio Hacker) 또는 GNU Radio"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">1</span>목표 & 가설</h3>
+    <label>목표
+      <textarea data-save="lab3:goal" rows="2">433MHz 또는 2.4GHz 대역의 무선 신호(무선 마우스, 드론 조종기 등)를 캡처하고 패킷 구조를 디코딩한다.</textarea>
+    </label>
+    <label>가설 / 예상 결과
+      <textarea data-save="lab3:hypothesis" rows="2">RTL-SDR로 수신한 신호를 URH로 열면, 반복되는 프리앰블(Preamble)과 데이터 페이로드를 시각적으로 식별할 수 있을 것이다.</textarea>
+    </label>
+    <label>성공 판정 기준
+      <textarea data-save="lab3:success" rows="2">특정 버튼을 눌렀을 때와 누르지 않았을 때의 신호 파형 차이를 캡처하고, 0과 1의 비트 스트림을 추출한다.</textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">V</span>검증 (Validation)</h3>
+    <div class="checklist">
+      <label><input type="checkbox" data-save="lab3:val1"><span>신호 캡처: 주파수 대역(Waterfall) 스크린샷 확보</span></label>
+      <label><input type="checkbox" data-save="lab3:val2"><span>디코딩: 비트 스트림(0과 1) 추출 성공</span></label>
+    </div>
+    <label>검증 증빙 자료 (경로/링크/사진 설명)
+      <textarea data-save="lab3:val_evidence" rows="2" placeholder="예: /images/sdr_waterfall.png, /images/urh_decode.png"></textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">2</span>사전 준비 (오프 전 완료)</h3>
+    <div class="checklist">
+      <label><input type="checkbox" data-save="lab3:prep1"><span>RTL-SDR 드라이버(Zadig 등) 설치 완료</span></label>
+      <label><input type="checkbox" data-save="lab3:prep2"><span>URH(Universal Radio Hacker) 또는 SDR# 프로그램 설치</span></label>
+      <label><input type="checkbox" data-save="lab3:prep3"><span>합법적인 캡처 대상(내 무선 마우스, 내 드론 조종기) 확보</span></label>
+      <label><input type="checkbox" data-save="lab3:prep4"><span>안테나 연결 및 주파수 튜닝 연습</span></label>
+    </div>
+    <label>예상 리스크 & 대비책
+      <textarea data-save="lab3:risk" rows="2">주변 노이즈가 너무 심해 신호가 안 잡힐 수 있음 → 대상 기기를 안테나에 최대한 가깝게 대고, Gain(이득) 조절</textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">3</span>절차 (오프날 실행)</h3>
+    <label>단계별 절차
+      <textarea data-save="lab3:proc" rows="5" placeholder="1.&#10;2.&#10;3.">1. SDR 프로그램 실행 및 중심 주파수(Center Frequency) 설정 (예: 433.92MHz)
+2. 대상 기기(마우스 등)의 버튼을 누르며 Waterfall(스펙트로그램)에서 신호 변화 확인
+3. 신호가 잡히는 순간 녹음(Record) 시작
+4. 녹음된 신호를 URH로 불러와 파형 분석 및 비트 디코딩
+5. 디코딩된 패킷의 헥사(Hex) 값 확인</textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">4</span>결과 / 측정값</h3>
+    <label>측정 기록
+      <textarea data-save="lab3:results" rows="4" placeholder="| 주파수 | 대상 기기 | 신호 크기 | 디코딩 결과 |&#10;|---|---|---|---|"></textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">5</span>문제 & 해결</h3>
+    <label>문제<textarea data-save="lab3:problem" rows="2"></textarea></label>
+    <label>원인<textarea data-save="lab3:cause" rows="1"></textarea></label>
+    <label>해결<textarea data-save="lab3:solution" rows="2"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">6</span>회고</h3>
+    <label>잘된 점<textarea data-save="lab3:good" rows="2"></textarea></label>
+    <label>아쉬운 점<textarea data-save="lab3:bad" rows="2"></textarea></label>
+    <label>다음 실습에 반영할 것<textarea data-save="lab3:next" rows="2">디코딩한 패킷을 FPGA로 실시간 분석하는 구조 연구</textarea></label>
+  </div>
+</section>
+
+
+
 <!-- ==================== 템플릿 ==================== -->
 <section id="template" class="panel">
   <div class="info-box">
