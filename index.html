@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>실습 기록장 · Lab Notebook</title>
+<style>
+:root{
+  --bg:#eef1f6; --card:#fff; --text:#1c2431; --muted:#6b7280;
+  --border:#e2e6ee; --accent:#c0392b; --accent2:#e74c3c;
+  --accent-soft:#fdecea; --ok:#16a34a; --warn:#d97706;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR','Apple SD Gothic Neo',sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+header{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff; padding:20px 24px; display:flex; align-items:center;
+  justify-content:space-between; flex-wrap:wrap; gap:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+header h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.3px}
+header .sub{font-size:12px;opacity:.9;margin-top:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button{
+  font:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:none;
+  cursor:pointer;transition:all .15s;background:rgba(255,255,255,.18);
+  color:#fff;backdrop-filter:blur(4px);
+}
+button:hover{background:rgba(255,255,255,.3)}
+button.primary{background:#fff;color:var(--accent);font-weight:600}
+button.primary:hover{background:#f3f3f3}
+button.ghost{background:transparent;border:1px solid rgba(255,255,255,.4)}
+.saved-badge{
+  position:fixed;bottom:16px;right:16px;background:var(--ok);color:#fff;
+  padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;
+  opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+.saved-badge.show{opacity:1;transform:translateY(0)}
+nav.tabs{
+  display:flex;gap:4px;padding:12px 16px 0;overflow-x:auto;
+  background:var(--bg);position:sticky;top:0;z-index:10;
+  border-bottom:1px solid var(--border);
+  scrollbar-width:thin;
+}
+.tab{
+  padding:9px 16px;border-radius:10px 10px 0 0;background:transparent;
+  color:var(--muted);cursor:pointer;white-space:nowrap;font-size:13px;
+  font-weight:500;border:none;transition:all .15s;user-select:none;
+}
+.tab:hover{color:var(--text);background:rgba(255,255,255,.5)}
+.tab.active{background:var(--card);color:var(--accent);font-weight:700;
+  box-shadow:0 -1px 3px rgba(0,0,0,.04)}
+main{padding:20px;max-width:1100px;margin:0 auto}
+.panel{display:none;animation:fadeIn .2s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{
+  background:var(--card);border-radius:14px;padding:20px;margin-bottom:16px;
+  box-shadow:var(--shadow);
+}
+.card h3{
+  margin:0 0 14px;font-size:15px;font-weight:700;color:var(--text);
+  display:flex;align-items:center;gap:8px;
+}
+.card h3 .num{
+  background:var(--accent-soft);color:var(--accent);
+  width:24px;height:24px;border-radius:6px;display:inline-flex;
+  align-items:center;justify-content:center;font-size:12px;font-weight:800;
+}
+label{display:block;margin-bottom:12px;font-size:13px;font-weight:500;color:var(--muted)}
+input[type=text],input[type=date],textarea{
+  width:100%;margin-top:5px;padding:9px 11px;border:1px solid var(--border);
+  border-radius:8px;font:inherit;font-size:14px;background:#fafbfd;
+  transition:all .15s;color:var(--text);
+}
+input:focus,textarea:focus{
+  outline:none;border-color:var(--accent);background:#fff;
+  box-shadow:0 0 0 3px rgba(192,57,43,.1);
+}
+textarea{resize:vertical;min-height:60px;line-height:1.5}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:600px){.grid-2{grid-template-columns:1fr}}
+.checklist{display:flex;flex-direction:column;gap:8px;margin:8px 0 14px}
+.checklist label{
+  display:flex;align-items:flex-start;gap:10px;margin:0;cursor:pointer;
+  color:var(--text);font-weight:400;font-size:14px;padding:8px 10px;
+  border-radius:8px;transition:background .15s;
+}
+.checklist label:hover{background:#f5f7fb}
+.checklist input[type=checkbox]{
+  margin:3px 0 0;width:18px;height:18px;accent-color:var(--accent);
+  cursor:pointer;flex-shrink:0;
+}
+.checklist input:checked + span{text-decoration:line-through;color:var(--muted)}
+.lab-title{
+  width:100%;font-size:20px;font-weight:800;padding:10px 12px;
+  border:none;background:transparent;color:var(--text);
+  border-bottom:2px solid var(--border);margin-bottom:16px;border-radius:0;
+}
+.lab-title:focus{box-shadow:none;border-bottom-color:var(--accent);background:transparent}
+.pipeline{display:flex;flex-direction:column;gap:0}
+.pipe-step{
+  background:var(--card);border-radius:12px;padding:16px 18px;
+  box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;
+  position:relative;
+}
+.pipe-step + .pipe-step{margin-top:22px}
+.pipe-step + .pipe-step::before{
+  content:"↓";position:absolute;top:-20px;left:34px;
+  color:var(--accent);font-weight:800;font-size:16px;
+}
+.pipe-step .badge{
+  background:var(--accent);color:#fff;width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-weight:800;
+  font-size:13px;flex-shrink:0;
+}
+.pipe-step h4{margin:0 0 4px;font-size:15px;font-weight:700}
+.pipe-step p{margin:0;font-size:13px;color:var(--muted)}
+table.plan{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+table.plan th,table.plan td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+table.plan th{background:#f5f7fb;font-weight:700;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+table.plan tr:last-child td{border-bottom:none}
+table.plan td:first-child{font-weight:700;color:var(--accent);white-space:nowrap;width:90px}
+table.plan tr.dday td{background:var(--accent-soft);font-weight:600}
+.info-box{
+  background:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;
+  border-radius:8px;font-size:13px;color:#1e40af;margin-bottom:16px;
+}
+.warn-box{
+  background:#fff7ed;border-left:4px solid var(--warn);padding:12px 16px;
+  border-radius:8px;font-size:13px;color:#9a3412;margin-bottom:16px;
+}
+footer{
+  text-align:center;padding:20px;color:var(--muted);font-size:12px;
+}
+@media print{
+  header,nav.tabs,.actions,.saved-badge,footer{display:none!important}
+  body{background:#fff}
+  .panel{display:block!important}
+  .panel:not(.active){display:none!important}
+  .card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid}
+  input,textarea{border:none;background:#fff;padding:2px 0}
+  .tab-content{display:block}
+}
+@media(max-width:600px){
+  main{padding:12px}
+  .card{padding:14px}
+  header{padding:14px 16px}
+  header h1{font-size:17px}
+  .tab{padding:8px 12px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🧪 실습 기록장</h1>
+    <div class="sub">STM32 · KiCad · OpenFOAM · FPGA · 드론 로드맵</div>
+  </div>
+  <div class="actions">
+    <button class="primary" onclick="exportMarkdown()">📄 MD 내보내기</button>
+    <button onclick="exportJSON()">💾 JSON 백업</button>
+    <button onclick="document.getElementById('importFile').click()">📂 불러오기</button>
+    <button class="ghost" onclick="window.print()">🖨 인쇄</button>
+    <button class="ghost" onclick="resetAll()">🗑 초기화</button>
+  </div>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-target="roadmap">🗺 로드맵</button>
+  <button class="tab" data-target="plan">📅 주간 계획</button>
+  <button class="tab" data-target="lab1">🔬 실습 #1</button>
+  <button class="tab" data-target="lab2">🔬 실습 #2</button>
+  <button class="tab" data-target="template">📋 템플릿</button>
+</nav>
+
+<main>
+
+<!-- ==================== 로드맵 ==================== -->
+<section id="roadmap" class="panel active">
+  <div class="card">
+    <h3>🎯 최종 목표: 자율 군집드론</h3>
+    <p style="margin:0;color:var(--muted);font-size:14px">
+      고추건조기를 축으로 모든 도구(SolidWorks·KiCad·OpenFOAM·FPGA)를 하나씩 연결합니다.
+      건조기에서 익힌 PID·PWM·안전로직·통신은 드론 제어의 축소판입니다.
+    </p>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="badge">1</div>
+      <div>
+        <h4>SolidWorks — 건조기 챔버 모델링</h4>
+        <p>히터·팬·센서 배치 확정 → OpenFOAM 입력 형상 확보</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="badge">2</div>
+      <div>
+        <h4>OpenFOAM — 열유동 해석</h4>
+        <p>확정 형상으로 팬/흡배기 위치 최적화, 정체영역 확인</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="badge">3</div>
+      <div>
+        <h4>KiCad — 제어보드 회로 설계</h4>
+        <p>STM32 + SHT30 + 릴레이 + 팬 드라이버 + 안전회로</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="badge">4</div>
+      <div>
+        <h4>STM32 펌웨어 — PID 제어</h4>
+        <p>온습도 PID, 오버슈트 차단, 센서 단선 감지, 데이터 로깅</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="badge">5</div>
+      <div>
+        <h4>FPGA 보안 — 로그 암호화</h4>
+        <p>AES-128로 온습도 이력 암호화 → 드론 군집 통신 보안으로 확장</p>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="badge">6</div>
+      <div>
+        <h4>군집드론 — 통합</h4>
+        <p>STM32 비행제어 + FPGA 가속 + LoRa 통신 아키텍처</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 주간 계획 ==================== -->
+<section id="plan" class="panel">
+  <div class="info-box">
+    💡 <b>원칙:</b> 평일엔 <b>준비만</b>(코드 작성·컴파일), 오프날은 <b>실행+기록만</b>. 오프날 코드 새로 짜지 않기.
+  </div>
+  <table class="plan">
+    <thead>
+      <tr><th>요일</th><th>실습 #1 (STM32 고추건조기)</th><th>실습 #2 (연계)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>D-7 (월)</td><td>기록장 0~1번: 목표 온도/습도·성공 판정 기준 확정</td><td>실습 #2 주제 확정 (KiCad 또는 OpenFOAM)</td></tr>
+      <tr><td>D-6 (화)</td><td>펌웨어 골격: 센서 읽기 + 표시 + 릴레이 ON/OFF</td><td>환경 세팅 (KiCad 프로젝트 / OpenFOAM case)</td></tr>
+      <tr><td>D-5 (수)</td><td>PID 루프 코드 + 더미 시뮬레이션</td><td>초안 작성 (회로도 배치 / blockMesh)</td></tr>
+      <tr><td>D-4 (목)</td><td>컴파일 성공 + 버튼 채터링 방지 로직</td><td>dry-run 1회</td></tr>
+      <tr><td>D-3 (금)</td><td>안전 로직 리뷰: 오버슈트 컷오프·단선 감지</td><td>1차 완성 + 리스크 목록</td></tr>
+      <tr><td>D-2 (토)</td><td>🔁 리허설: 플래싱 + 센서 1개 읽기 확인</td><td>🔁 짧은 리허설</td></tr>
+      <tr><td>D-1 (일)</td><td>절차 칸 채우기, 배선도/핀맵 확정</td><td>절차 칸 채우기</td></tr>
+      <tr class="dday"><td>D-Day</td><td>조립 → PID 튜닝 → 온도 곡선 기록 → 안전 테스트</td><td>실행·측정·기록</td></tr>
+      <tr><td>D+1</td><td>회고 작성, 다음 주제(FPGA/드론) 메모</td><td>회고 작성</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== 실습 #1 ==================== -->
+<section id="lab1" class="panel">
+  <input type="text" class="lab-title" data-save="lab1:title"
+         placeholder="실습 #1 제목" value="실습 #1: STM32 기반 고추건조기 온습도 제어">
+
+  <div class="card">
+    <h3><span class="num">0</span>기본 정보</h3>
+    <div class="grid-2">
+      <label>날짜<input type="date" data-save="lab1:date"></label>
+      <label>분야<input type="text" data-save="lab1:field" placeholder="임베디드 / 제어" value="임베디드 · 제어"></label>
+      <label>예상 소요<input type="text" data-save="lab1:duration" placeholder="4~6시간" value="4~6시간"></label>
+      <label>환경 / 도구<input type="text" data-save="lab1:tools" placeholder="STM32F103, SHT30, 릴레이, STM32CubeIDE" value="STM32F103, SHT30, 릴레이, 히터, 팬, STM32CubeIDE"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">1</span>목표 & 가설</h3>
+    <label>목표
+      <textarea data-save="lab1:goal" rows="2" placeholder="검증 가능하게">설정 온도 50°C에서 ±2°C 이내로 30분 이상 유지하고, 과온 시 히터가 자동 차단된다.</textarea>
+    </label>
+    <label>가설 / 예상 결과
+      <textarea data-save="lab1:hypothesis" rows="2">P 제어만으로는 정상상태 오차가 남을 것이고, I 항을 추가하면 50°C에 수렴할 것이다.</textarea>
+    </label>
+    <label>성공 판정 기준
+      <textarea data-save="lab1:success" rows="2">30분간 ±2°C 유지 / 오버슈트 5°C 이하 / 센서 단선 시 히터 OFF</textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">2</span>사전 준비 (오프 전 완료)</h3>
+    <div class="checklist">
+      <label><input type="checkbox" data-save="lab1:prep1"><span>펌웨어 골격 컴파일 성공</span></label>
+      <label><input type="checkbox" data-save="lab1:prep2"><span>PID 계수 초안 + 더미 시뮬레이션 완료</span></label>
+      <label><input type="checkbox" data-save="lab1:prep3"><span>핀맵·배선도 확정 (I2C, GPIO, PWM, EXTI)</span></label>
+      <label><input type="checkbox" data-save="lab1:prep4"><span>부품 체크: 히터 전력 vs 릴레이 정격, 퓨즈, 접지</span></label>
+      <label><input type="checkbox" data-save="lab1:prep5"><span>리스크 대비책 1개 이상 작성</span></label>
+    </div>
+    <label>예상 리스크 & 대비책
+      <textarea data-save="lab1:risk" rows="2">릴레이 노이즈로 인한 I2C 통신 오류 → 센서 재시도 로직 삽입</textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">3</span>절차 (오프날 실행)</h3>
+    <label>단계별 절차
+      <textarea data-save="lab1:proc" rows="6" placeholder="1.&#10;2.&#10;3.">1. 전원 차단 상태에서 배선 → 멀티미터로 단락 확인
+2. 센서 단독 읽기 테스트 (실온 vs 측정값)
+3. 릴레이 수동 ON/OFF 테스트
+4. PID 루프 가동, 목표 50°C 설정
+5. 10분 단위 온도 기록, 오버슈트 관찰
+6. 안전 테스트: 센서 커넥터 분리 → 히터 OFF 확인</textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">4</span>결과 / 측정값</h3>
+    <label>측정 기록 (Markdown 표 가능)
+      <textarea data-save="lab1:results" rows="6" placeholder="| 시간(min) | 설정(°C) | 측정(°C) | 히터 | 비고 |&#10;|---|---|---|---|---|">| 시간(min) | 설정(°C) | 측정(°C) | 히터 | 비고 |
+|---|---|---|---|---|---|
+| 0  | 50 | 24.5 | ON  | 시작 |
+| 10 | 50 | 46.2 | ON  | |
+| 20 | 50 | 51.8 | OFF | 오버슈트 |
+| 30 | 50 | 49.6 | ON  | 수렴 |</textarea>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">5</span>문제 & 해결</h3>
+    <label>문제<textarea data-save="lab1:problem" rows="2">20분경 51.8°C 오버슈트</textarea></label>
+    <label>원인<textarea data-save="lab1:cause" rows="1">히터 열관성 + D항 부재</textarea></label>
+    <label>해결<textarea data-save="lab1:solution" rows="2">Kd 소폭 추가 + "목표+3°C 도달 시 즉시 차단" 안전 로직 삽입</textarea></label>
+    <label>소요 시간<textarea data-save="lab1:time" rows="1"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">6</span>회고</h3>
+    <label>잘된 점<textarea data-save="lab1:good" rows="2">채터링 필터로 버튼 오동작 해결</textarea></label>
+    <label>아쉬운 점<textarea data-save="lab1:bad" rows="2">릴레이 노이즈로 I2C 1회 끊김</textarea></label>
+    <label>다음 실습에 반영할 것<textarea data-save="lab1:next" rows="2">KiCad로 릴레이 드라이버 포함 PCB 설계 / OpenFOAM으로 팬 위치 최적화</textarea></label>
+    <label>추가로 파볼 것<textarea data-save="lab1:more" rows="2">AES-128 로그 암호화를 FPGA로 옮기기</textarea></label>
+  </div>
+</section>
+
+<!-- ==================== 실습 #2 ==================== -->
+<section id="lab2" class="panel">
+  <input type="text" class="lab-title" data-save="lab2:title"
+         placeholder="실습 #2 제목 (예: KiCad STM32 최소보드 설계 / OpenFOAM 건조 챔버 해석)">
+
+  <div class="warn-box">
+    📝 <b>실습 #2 주제 추천:</b> ① <b>KiCad</b> STM32F103 최소보드(USB+SWD+3.3V LDO) → 고추건조기 PCB로 직결, ② <b>OpenFOAM</b> 건조 챔버 2D/3D 열유동 해석 → 팬/흡배기 최적화
+  </div>
+
+  <div class="card">
+    <h3><span class="num">0</span>기본 정보</h3>
+    <div class="grid-2">
+      <label>날짜<input type="date" data-save="lab2:date"></label>
+      <label>분야<input type="text" data-save="lab2:field" placeholder="하드웨어 / 시뮬레이션"></label>
+      <label>예상 소요<input type="text" data-save="lab2:duration"></label>
+      <label>환경 / 도구<input type="text" data-save="lab2:tools"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">1</span>목표 & 가설</h3>
+    <label>목표<textarea data-save="lab2:goal" rows="2"></textarea></label>
+    <label>가설 / 예상 결과<textarea data-save="lab2:hypothesis" rows="2"></textarea></label>
+    <label>성공 판정 기준<textarea data-save="lab2:success" rows="2"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">2</span>사전 준비 (오프 전 완료)</h3>
+    <div class="checklist">
+      <label><input type="checkbox" data-save="lab2:prep1"><span>프로젝트/환경 세팅 완료</span></label>
+      <label><input type="checkbox" data-save="lab2:prep2"><span>초안 작성 완료 (회로도 / 메쉬)</span></label>
+      <label><input type="checkbox" data-save="lab2:prep3"><span>dry-run 1회 성공</span></label>
+      <label><input type="checkbox" data-save="lab2:prep4"><span>부품/솔버 체크리스트 확인</span></label>
+      <label><input type="checkbox" data-save="lab2:prep5"><span>리스크 대비책 1개 이상</span></label>
+    </div>
+    <label>예상 리스크 & 대비책<textarea data-save="lab2:risk" rows="2"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">3</span>절차</h3>
+    <label>단계별 절차<textarea data-save="lab2:proc" rows="6" placeholder="1.&#10;2.&#10;3."></textarea></label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">4</span>결과 / 측정값</h3>
+    <label>측정 기록<textarea data-save="lab2:results" rows="5"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">5</span>문제 & 해결</h3>
+    <label>문제<textarea data-save="lab2:problem" rows="2"></textarea></label>
+    <label>원인<textarea data-save="lab2:cause" rows="1"></textarea></label>
+    <label>해결<textarea data-save="lab2:solution" rows="2"></textarea></label>
+    <label>소요 시간<textarea data-save="lab2:time" rows="1"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">6</span>회고</h3>
+    <label>잘된 점<textarea data-save="lab2:good" rows="2"></textarea></label>
+    <label>아쉬운 점<textarea data-save="lab2:bad" rows="2"></textarea></label>
+    <label>다음 실습에 반영할 것<textarea data-save="lab2:next" rows="2"></textarea></label>
+    <label>추가로 파볼 것<textarea data-save="lab2:more" rows="2"></textarea></label>
+  </div>
+</section>
+
+<!-- ==================== 템플릿 ==================== -->
+<section id="template" class="panel">
+  <div class="info-box">
+    📋 <b>사용법:</b> 이 탭의 내용을 복사해 새 실습 기록으로 붙여넣으세요. 
+    또는 <b>JSON 백업</b>으로 전체 데이터를 저장해 두고 <b>불러오기</b>로 복원할 수 있습니다.
+  </div>
+  <div class="card">
+    <h3>빈 기록장 구조</h3>
+<pre style="background:#f8fafc;padding:14px;border-radius:8px;overflow:auto;font-size:12px;line-height:1.5;border:1px solid var(--border)"># 실습 #__ : (제목)
+
+## 0. 기본 정보
+- 날짜 / 분야 / 예상 소요 / 도구·환경
+
+## 1. 목표 & 가설
+- 목표 (검증 가능하게)
+- 가설 / 예상 결과
+- 성공 판정 기준
+
+## 2. 사전 준비 (오프 전 완료)
+- [ ] 코드 컴파일 성공
+- [ ] 부품 / 툴 체크
+- [ ] 리스크 & 대비책
+
+## 3. 절차 (오프날 실행)
+1.
+2.
+3.
+
+## 4. 결과 / 측정값
+| 항목 | 측정값 | 단위 | 비고 |
+|---|---|---|---|
+
+## 5. 문제 & 해결
+- 문제 / 원인 / 해결 / 소요 시간
+
+## 6. 회고
+- 잘된 점 / 아쉬운 점 / 다음 반영 / 추가 탐구</pre>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  로컬 저장 · 서버 없이 동작 · 브라우저 localStorage 사용
+</footer>
+
+<div class="saved-badge" id="savedBadge">✅ 저장됨</div>
+
+<script>
+const STORAGE_KEY = 'lab-notebook-v1';
+let saveTimer;
+
+function collectData() {
+  const data = {};
+  document.querySelectorAll('[data-save]').forEach(el => {
+    data[el.dataset.save] = el.type === 'checkbox' ? el.checked : el.value;
+  });
+  return data;
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData()));
+    flashSaved();
+  } catch(e) { console.warn('저장 실패', e); }
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    document.querySelectorAll('[data-save]').forEach(el => {
+      const v = data[el.dataset.save];
+      if (v === undefined) return;
+      if (el.type === 'checkbox') el.checked = !!v;
+      else el.value = v;
+    });
+  } catch(e) { console.warn('불러오기 실패', e); }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 300);
+}
+
+function flashSaved() {
+  const b = document.getElementById('savedBadge');
+  b.classList.add('show');
+  clearTimeout(b._t);
+  b._t = setTimeout(() => b.classList.remove('show'), 1400);
+}
+
+function setupTabs() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+  });
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(collectData(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'lab-notebook-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      document.querySelectorAll('[data-save]').forEach(el => {
+        const v = data[el.dataset.save];
+        if (v === undefined) return;
+        if (el.type === 'checkbox') el.checked = !!v;
+        else el.value = v;
+      });
+      save();
+      alert('불러오기 완료');
+    } catch(err) { alert('파일 형식이 잘못됐습니다.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function exportMarkdown() {
+  const g = (k) => {
+    const el = document.querySelector(`[data-save="${k}"]`);
+    if (!el) return '';
+    return el.type === 'checkbox' ? (el.checked ? 'x' : ' ') : el.value;
+  };
+  const lab = (prefix, fallbackTitle) => {
+    const title = g(prefix + ':title') || fallbackTitle;
+    let md = `# ${title}\n\n`;
+    md += `## 0. 기본 정보\n- 날짜: ${g(prefix+':date')}\n- 분야: ${g(prefix+':field')}\n- 예상 소요: ${g(prefix+':duration')}\n- 환경/도구: ${g(prefix+':tools')}\n\n`;
+    md += `## 1. 목표 & 가설\n- 목표: ${g(prefix+':goal')}\n- 가설: ${g(prefix+':hypothesis')}\n- 성공 판정: ${g(prefix+':success')}\n\n`;
+    md += `## 2. 사전 준비\n`;
+    for (let i=1;i<=5;i++) md += `- [${g(prefix+':prep'+i)}] 항목 ${i}\n`;
+    md += `- 리스크: ${g(prefix+':risk')}\n\n`;
+    md += `## 3. 절차\n${g(prefix+':proc')}\n\n`;
+    md += `## 4. 결과 / 측정값\n${g(prefix+':results')}\n\n`;
+    md += `## 5. 문제 & 해결\n- 문제: ${g(prefix+':problem')}\n- 원인: ${g(prefix+':cause')}\n- 해결: ${g(prefix+':solution')}\n- 소요: ${g(prefix+':time')}\n\n`;
+    md += `## 6. 회고\n- 잘된 점: ${g(prefix+':good')}\n- 아쉬운 점: ${g(prefix+':bad')}\n- 다음 반영: ${g(prefix+':next')}\n- 추가 탐구: ${g(prefix+':more')}\n\n---\n\n`;
+    return md;
+  };
+  let md = `# 실습 기록장\n\n_내보낸 날짜: ${new Date().toLocaleString('ko-KR')}_\n\n`;
+  md += lab('lab1', '실습 #1');
+  md += lab('lab2', '실습 #2');
+  const blob = new Blob([md], {type:'text/markdown;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'lab-notebook-' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+}
+
+function resetAll() {
+  if (!confirm('모든 기록을 초기화할까요? 되돌릴 수 없습니다.')) return;
+  if (!confirm('정말요? JSON 백업을 먼저 권장합니다.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  load();
+  setupTabs();
+  document.querySelectorAll('[data-save]').forEach(el => {
+    el.addEventListener('input', scheduleSave);
+    el.addEventListener('change', scheduleSave);
+  });
+});
+</script>
+</body>
+</html>
